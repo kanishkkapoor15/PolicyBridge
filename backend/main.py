@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import router
+from api.routes import api_router
 from rag.store import ingest_knowledge_base, is_knowledge_base_ingested, get_collection_stats
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -13,12 +13,9 @@ logger = logging.getLogger("policybridge")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: ensure knowledge base is ingested
     if is_knowledge_base_ingested():
         stats = get_collection_stats()
         logger.info(f"Knowledge base already ingested: {stats['total']} chunks across {len(stats['frameworks'])} frameworks")
-        for fw, count in sorted(stats["frameworks"].items()):
-            logger.info(f"  {fw}: {count} chunks")
     else:
         logger.info("Ingesting knowledge base into ChromaDB...")
         ingest_knowledge_base()
@@ -37,7 +34,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/api")
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "service": "PolicyBridge"}
+
+
+app.include_router(api_router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn
