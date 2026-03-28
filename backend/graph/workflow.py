@@ -7,59 +7,30 @@ from langgraph.types import interrupt, Command
 
 from graph.state import PolicyBridgeState
 from graph.checkpointer import get_checkpointer, save_session_snapshot
+from agents.ingestion_agent import run_ingestion_agent
+from agents.conflict_agent import run_conflict_agent
+from agents.gap_analysis_agent import run_gap_analysis_agent
 
 logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Stub node implementations — full logic comes in Step 5
+# Node implementations — Agents 1-3 are real, rest are stubs until Step 5B
 # ---------------------------------------------------------------------------
 
 def ingest_documents(state: PolicyBridgeState) -> dict:
     """Process uploaded files: extract text and classify document type."""
-    docs = state.get("uploaded_documents", [])
-    msg = f"[ingest_documents] {len(docs)} documents loaded"
-    logger.info(msg)
-    return {
-        "current_stage": "analysis",
-        "agent_messages": state.get("agent_messages", []) + [msg],
-    }
+    return run_ingestion_agent(state)
 
 
 def detect_conflicts(state: PolicyBridgeState) -> dict:
     """Cross-reference all documents in the batch for contradictions."""
-    docs = state.get("uploaded_documents", [])
-    msg = f"[detect_conflicts] checked {len(docs)} documents — no conflicts found (stub)"
-    logger.info(msg)
-    return {
-        "intra_batch_conflicts": [],
-        "agent_messages": state.get("agent_messages", []) + [msg],
-    }
+    return run_conflict_agent(state)
 
 
 def analyze_gaps(state: PolicyBridgeState) -> dict:
     """RAG-powered gap analysis comparing docs against Irish/EU legal corpus."""
-    docs = state.get("uploaded_documents", [])
-    # Stub: create placeholder gap entries per document
-    gap_analysis = []
-    for doc in docs:
-        gap_analysis.append({
-            "doc_id": doc["doc_id"],
-            "gaps": [
-                {
-                    "clause": "General compliance",
-                    "issue": "Document requires review against Irish/EU framework (stub)",
-                    "relevant_law": "GDPR, Irish Employment Equality Acts",
-                    "confidence": 75,
-                }
-            ],
-        })
-    msg = f"[analyze_gaps] identified gaps across {len(docs)} documents"
-    logger.info(msg)
-    return {
-        "gap_analysis": gap_analysis,
-        "agent_messages": state.get("agent_messages", []) + [msg],
-    }
+    return run_gap_analysis_agent(state)
 
 
 def generate_plan(state: PolicyBridgeState) -> dict:
