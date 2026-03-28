@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(npx create-next-app@latest /Users/kanishkkapoor/Desktop/PolicyMigrationAgent/frontend --typescript --tailwind --eslint --app --src-dir=false --import-alias=\"@/*\" --use-npm --no-turbopack)",
+      "Bash(npx create-next-app@latest frontend --typescript --tailwind --eslint --app --src-dir=false --import-alias=\"@/*\" --use-npm --no-turbopack)",
+      "Bash(yes \"\")",
+      "Bash(rm -rf /Users/kanishkkapoor/Desktop/PolicyMigrationAgent/frontend/.git)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
