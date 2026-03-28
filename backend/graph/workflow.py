@@ -10,12 +10,15 @@ from graph.checkpointer import get_checkpointer, save_session_snapshot
 from agents.ingestion_agent import run_ingestion_agent
 from agents.conflict_agent import run_conflict_agent
 from agents.gap_analysis_agent import run_gap_analysis_agent
+from agents.planning_agent import run_planning_agent
+from agents.conversion_agent import run_conversion_agent
+from agents.summary_agent import run_summary_agent
 
 logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Node implementations — Agents 1-3 are real, rest are stubs until Step 5B
+# Node implementations — all wired to real agents
 # ---------------------------------------------------------------------------
 
 def ingest_documents(state: PolicyBridgeState) -> dict:
@@ -35,25 +38,7 @@ def analyze_gaps(state: PolicyBridgeState) -> dict:
 
 def generate_plan(state: PolicyBridgeState) -> dict:
     """Synthesise gap analysis into a human-readable conversion plan."""
-    docs = state.get("uploaded_documents", [])
-    plan = {
-        "summary": "Conversion plan for batch of documents (stub)",
-        "per_document_actions": [
-            {
-                "doc_id": doc["doc_id"],
-                "filename": doc["filename"],
-                "planned_changes": ["Review and convert to Irish/EU compliance (stub)"],
-            }
-            for doc in docs
-        ],
-    }
-    msg = f"[generate_plan] conversion plan ready for {len(docs)} documents"
-    logger.info(msg)
-    return {
-        "conversion_plan": plan,
-        "current_stage": "awaiting_plan_approval",
-        "agent_messages": state.get("agent_messages", []) + [msg],
-    }
+    return run_planning_agent(state)
 
 
 def human_plan_approval(state: PolicyBridgeState) -> dict:
@@ -76,44 +61,7 @@ def human_plan_approval(state: PolicyBridgeState) -> dict:
 
 def convert_document(state: PolicyBridgeState) -> dict:
     """Convert the current document (by current_doc_index) to Irish/EU compliance."""
-    idx = state.get("current_doc_index", 0)
-    docs = state.get("uploaded_documents", [])
-    doc = docs[idx] if idx < len(docs) else {"doc_id": "unknown", "filename": "unknown"}
-
-    converted = {
-        "doc_id": doc["doc_id"],
-        "filename": doc["filename"],
-        "original_text": doc.get("raw_text", ""),
-        "converted_text": f"[Converted version of {doc['filename']}] (stub)",
-        "changes": [
-            {
-                "original_clause": "Original clause text (stub)",
-                "new_clause": "Converted clause text (stub)",
-                "legal_citation": "GDPR Article 5 (stub)",
-                "confidence": 85,
-            }
-        ],
-        "status": "converted",
-    }
-
-    existing = list(state.get("converted_documents", []))
-    # Replace if re-converting same doc, otherwise append
-    replaced = False
-    for i, c in enumerate(existing):
-        if c["doc_id"] == doc["doc_id"]:
-            existing[i] = converted
-            replaced = True
-            break
-    if not replaced:
-        existing.append(converted)
-
-    msg = f"[convert_document] processing doc {idx + 1}/{len(docs)}: {doc['filename']}"
-    logger.info(msg)
-    return {
-        "converted_documents": existing,
-        "current_stage": "awaiting_doc_approval",
-        "agent_messages": state.get("agent_messages", []) + [msg],
-    }
+    return run_conversion_agent(state)
 
 
 def human_doc_approval(state: PolicyBridgeState) -> dict:
@@ -163,23 +111,7 @@ def advance_or_finish(state: PolicyBridgeState) -> dict:
 
 def generate_summary(state: PolicyBridgeState) -> dict:
     """Generate final report, outstanding issues, and mark session complete."""
-    docs = state.get("uploaded_documents", [])
-    converted = state.get("converted_documents", [])
-    report = {
-        "executive_summary": f"Completed conversion of {len(converted)} documents (stub)",
-        "total_gaps_found": sum(len(g.get("gaps", [])) for g in state.get("gap_analysis", [])),
-        "total_changes_made": sum(len(c.get("changes", [])) for c in converted),
-        "compliance_score": 85,
-    }
-    msg = "[generate_summary] session complete"
-    logger.info(msg)
-    return {
-        "final_report": report,
-        "outstanding_issues": [],
-        "export_ready": True,
-        "current_stage": "complete",
-        "agent_messages": state.get("agent_messages", []) + [msg],
-    }
+    return run_summary_agent(state)
 
 
 # ---------------------------------------------------------------------------
